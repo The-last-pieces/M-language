@@ -1,6 +1,6 @@
 import com.mnzn.lex.LexParser;
 import com.mnzn.lex.Token;
-import com.mnzn.utils.visual.console.PrintTokenUnits;
+import com.mnzn.utils.visual.console.PrintUtils;
 
 import java.util.List;
 import java.util.Scanner;
@@ -14,8 +14,8 @@ public class LexTest {
         LexParser lexParser = new LexParser();
         String str = "./test_script/test.m";
         List<Token> tokens = lexParser.parseFile(str);
-        PrintTokenUnits.printTokens(tokens);
-        PrintTokenUnits.printColorTokens(tokens);
+        PrintUtils.printTokens(tokens);
+        PrintUtils.printColorTokens(tokens);
     }
 
     private static void testConsole() {
@@ -24,8 +24,8 @@ public class LexTest {
         while (scanner.hasNext()) {
             String str = scanner.nextLine();
             List<Token> tokens = lexParser.parse(str);
-            PrintTokenUnits.printTokens(tokens);
-            PrintTokenUnits.printColorTokens(tokens);
+            PrintUtils.printTokens(tokens);
+            PrintUtils.printColorTokens(tokens);
         }
     }
 }
