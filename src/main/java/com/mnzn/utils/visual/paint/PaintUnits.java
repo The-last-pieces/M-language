@@ -24,14 +24,14 @@ public class PaintUnits {
     }
 
     // 打印树状图
-    public static void paintTree(DrawableTreeNode treeNode, String outputPath) {
+    public static void paintTree(DrawableTreeNode root, String outputPath) {
         Graph g = graph().directed().
-                graphAttr().
-                with(Rank.dir(Rank.RankDir.TOP_TO_BOTTOM));
+                graphAttr().with(Rank.dir(Rank.RankDir.TOP_TO_BOTTOM)).
+                with(makeNode(root));
         // bfs
         List<DrawableTreeNode> queue = new LinkedList<>();
-        queue.add(treeNode);
-        makeNode(treeNode);
+        queue.add(root);
+
         while (!queue.isEmpty()) {
             DrawableTreeNode cur = queue.remove(0);
             Node n = makeNode(cur);
