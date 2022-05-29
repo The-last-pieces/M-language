@@ -40,7 +40,7 @@ public class Token {
     }
 
     private static Tuple2<Token, PrintConfig[]> builder(TokenTag tag, String value) {
-        if (tag.isPure()) {
+        if (tag.isPure() || tag.isNone()) {
             return Tuple.of(new Token(tag), new PrintConfig[]{
                     PrintConfig.RED, PrintConfig.BLUE // 紫色
             });
@@ -79,7 +79,7 @@ public class Token {
                         }
                 );
                 // Todo
-                default -> throw new RuntimeException("unexpected token terminal: " + tag);
+                default -> throw new IllegalArgumentException("unexpected token terminal: " + tag);
             };
         }
     }
