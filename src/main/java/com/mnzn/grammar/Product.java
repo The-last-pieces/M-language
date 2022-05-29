@@ -1,10 +1,12 @@
 package com.mnzn.grammar;
 
-import com.mnzn.grammar.ast.ASTNode;
 import com.mnzn.lex.TokenTag;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
 import java.util.*;
 import java.util.function.Function;
 
@@ -15,6 +17,11 @@ public class Product {
         // 是否为终结符
         public boolean isTerminal() {
             return terminal != null;
+        }
+
+        @Override
+        public String toString() {
+            return isTerminal() ? terminal.toString() : left;
         }
     }
 
@@ -131,10 +138,37 @@ public class Product {
         return nodes[rule.index];
     }
 
+    // 获取第i个符号
+    public Symbol get(int index) {
+        return symbols.get(index);
+    }
+
     // 获取符号长度
     public int getSymbolCount() {
         return symbols.size();
     }
+
+    // 转字符串
+    public String toString() {
+        return String.format("%s -> %s", left, String.join(" ", symbols.stream().map(Symbol::toString).toList()));
+    }
+
+    // 指定点的位置
+    public String toString(int dot) {
+        StringBuilder sb = new StringBuilder();
+        sb.append(left);
+        sb.append(" -> ");
+        List<String> list = new ArrayList<>(getSymbolCount() + 1);
+        for (int i = 0, n = getSymbolCount(); i < n; i++) {
+            if (i == dot) {
+                list.add(".");
+            }
+            list.add(get(i).toString());
+        }
+        sb.append(String.join(" ", list));
+        return sb.toString();
+    }
+
 
     // 辅助构造产生式
     public static class ProductBuilder {
@@ -163,13 +197,29 @@ public class Product {
             return this;
         }
 
+        // 自动导入别名
+        public ProductBuilder autoImport() {
+            for (TokenTag tag : TokenTag.values()) {
+                alias(tag.getSymbol(), tag);
+            }
+            return this;
+        }
+
+        public ProductBuilder autoImport(String... names) {
+            for (String name : names) {
+                TokenTag tag = TokenTag.valueOf(name);
+                alias(name, tag);
+            }
+            return this;
+        }
+
         // 添加一个普通产生式,使用空格分割symbol
         public ProductBuilder add(String rule, String product) {
             String[] parts = product.split("->");
             if (parts.length != 2) throw new IllegalArgumentException("产生式格式错误: string -> string...");
             String left = parts[0].trim();
-            List<Symbol> rights = Arrays.stream(parts[1].trim().split("\\s+"))
-                    .map(this::node).toList();
+            List<Symbol> rights = new ArrayList<>();
+            Arrays.stream(parts[1].trim().split("\\s+")).map(this::node).forEach(rights::add);
             products.add(new Product(left, rights, rule));
             return this;
         }
@@ -187,9 +237,26 @@ public class Product {
             return this;
         }
 
+        // 从文件读取文法 Todo
+        public ProductBuilder load(String file) throws IOException {
+            // 读取文件
+            try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
+                String line;
+                while ((line = reader.readLine()) != null) {
+                }
+            }
+            return this;
+        }
+
         // 返回构造完毕的产生式列表
         public Product[] build() {
             return products.toArray(Product[]::new);
+        }
+
+        // 返回构造完毕的唯一一个产生式
+        public Product buildOne() {
+            if (products.size() != 1) throw new IllegalArgumentException("产生式数量不为1");
+            return products.get(0);
         }
     }
 }
