@@ -36,6 +36,7 @@ public enum TokenTag {
     Mut("*"),
     Div("/"),
     Pow("**"),
+    Mod("%"),
     Assign("="),
     // 逻辑运算符
     And("&&"),
@@ -68,43 +69,64 @@ public enum TokenTag {
     Import("import"), // 引入模块
     Let("let"), // 定义变量
     // 标识符
-    Identifier(Pattern.compile("[a-zA-Z_]\\w*")),
+    Identifier(Pattern.compile("[a-zA-Z_]\\w*"), "id"),
     /// 字面量
     // 数字
-    BoolLiteral(Pattern.compile("true|false")),
-    IntLiteral(Pattern.compile("\\d+")),
-    FloatLiteral(Pattern.compile("\\d+\\.\\d*")),
+    BoolLiteral(Pattern.compile("true|false"), "bi"),
+    IntLiteral(Pattern.compile("\\d+"), "ii"),
+    FloatLiteral(Pattern.compile("\\d+\\.\\d*"), "fi"),
     // 字符串,使用\"转义
-    StringLiteral(Pattern.compile("\".*?(?!\\\\)\"")),
+    StringLiteral(Pattern.compile("\".*?(?!\\\\)\""), "si"),
     // 空白/注释
     Nop(Pattern.compile("(?m)(\\s+)|(//[\\s\\S]*?\n)|(/\\*[\\s\\S]*?\\*/)")),
     /// 不参与词法分析的特殊token
     // 文法空串
-    Epsilon,
+    Epsilon("e", true),
     // 文法结束符
-    Eof;
+    Eof("$", true);
 
     private final Pattern pattern;
     @Getter
     private final String pure;
+    @Getter
+    // 文法中的别名
+    private final String symbol;
 
-    TokenTag() {
-        pattern = null;
-        pure = null;
+    // 不参与词法分析的特殊token
+    TokenTag(String str, boolean isNone) {
+        if (isNone) {
+            this.pattern = null;
+            this.pure = null;
+            this.symbol = str;
+        } else {
+            this.pattern = null;
+            this.pure = str;
+            this.symbol = str;
+        }
     }
 
     TokenTag(String str) {
-        this.pattern = null;
-        this.pure = str;
+        this(str, false);
     }
 
     TokenTag(Pattern regex) {
-        this.pattern = Pattern.compile(regex.pattern());
-        this.pure = null;
+        this(regex, null);
     }
 
+    TokenTag(Pattern regex, String symbol) {
+        this.pattern = Pattern.compile(regex.pattern());
+        this.pure = null;
+        this.symbol = symbol;
+    }
+
+    // 是否为纯字符串的TokenTag
     boolean isPure() {
         return this.pure != null;
+    }
+
+    // 用以支持语法分析的特殊token
+    boolean isNone() {
+        return this.pure == null && this.pattern == null;
     }
 
     // 在开头匹配,匹配失败返回-1,否则返回下一个字符的位置
