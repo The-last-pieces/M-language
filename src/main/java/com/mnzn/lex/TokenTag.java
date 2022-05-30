@@ -129,6 +129,10 @@ public enum TokenTag {
         return this.pure == null && this.pattern == null;
     }
 
+    boolean needParse() {
+        return !isNone() && this != Nop;
+    }
+
     // 在开头匹配,匹配失败返回-1,否则返回下一个字符的位置
     private int match(String s, int idx) {
         if (null != pure) {
