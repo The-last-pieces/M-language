@@ -2,6 +2,7 @@ package com.mnzn.utils.visual.console;
 
 import com.mnzn.lex.Token;
 import com.mnzn.lex.TokenTag;
+import com.mnzn.utils.tree.TreeNode;
 import de.vandermeer.asciitable.AsciiTable;
 
 import java.util.List;
@@ -32,6 +33,21 @@ public class PrintUtils {
         }
         at.addRule();
         System.out.println(at.render());
+    }
+
+    // 打印树
+    public static <T extends TreeNode<T>> void printTree(TreeNode<T> root, String determiner) {
+        printTree(root, 0, determiner);
+    }
+
+    private static <T extends TreeNode<T>> void printTree(TreeNode<T> root, int dep, String determiner) {
+        for (int i = 0; i < dep; i++) {
+            System.out.print(determiner);
+        }
+        System.out.println(root.toString());
+        for (TreeNode<T> node : root.getChildren()) {
+            printTree(node, dep + 1, determiner);
+        }
     }
 
     public static void main(String[] args) {
