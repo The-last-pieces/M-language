@@ -11,11 +11,6 @@ import java.util.List;
 public class LexParser {
     private int line = 1, col = 1;
 
-    public void reset() {
-        line = 1;
-        col = 1;
-    }
-
     private void updateCursor(String value) {
         for (char c : value.toCharArray()) {
             if (c == '\n') {
@@ -45,6 +40,11 @@ public class LexParser {
             throw buildException(e.getMessage());
         }
         return tokens;
+    }
+
+    // 只获取参与解析的Token
+    public List<Token> parsePure(String str) {
+        return parse(str).stream().filter(c -> c.getTag().needParse()).toList();
     }
 
     public List<Token> parseFile(String filePath) {
