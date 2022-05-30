@@ -1,4 +1,4 @@
-import com.mnzn.utils.visual.DrawableTreeNode;
+import com.mnzn.utils.tree.DrawableTreeNode;
 import com.mnzn.utils.visual.paint.PaintUnits;
 
 import java.util.Arrays;
@@ -6,34 +6,36 @@ import java.util.LinkedList;
 import java.util.List;
 
 public class PaintTest {
-    private static class TestNode implements DrawableTreeNode {
-        private static int idCnt = 0;
-        private final String id;
+    private static class TestNode extends DrawableTreeNode<TestNode> {
         private final List<String> values;
-        private final List<DrawableTreeNode.ForwardEdge> children = new LinkedList<>();
+        private final List<ForwardEdge> children = new LinkedList<>();
 
         public TestNode(String... values) {
-            this.id = String.valueOf(idCnt++);
             this.values = Arrays.stream(values).toList();
         }
 
         public void addChild(TestNode child, String edge) {
-            children.add(new DrawableTreeNode.ForwardEdge(child, edge));
-        }
-
-        @Override
-        public String getId() {
-            return id;
+            children.add(new ForwardEdge(child, edge));
         }
 
         @Override
         public List<String> getLabels() {
-            return values;
+            return values.stream().toList();
         }
 
         @Override
-        public ForwardEdge[] getEdges() {
-            return children.toArray(ForwardEdge[]::new);
+        public List<ForwardEdge> getEdges() {
+            return children.stream().toList();
+        }
+
+        @Override
+        public List<TestNode> getChildren() {
+            return children.stream().map(ForwardEdge::getNode).toList();
+        }
+
+        @Override
+        public void addChild(TestNode child) {
+            addChild(child, "");
         }
 
         public static TestNode randMake(int depth) {

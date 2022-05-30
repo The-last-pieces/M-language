@@ -2,33 +2,27 @@ package com.mnzn.grammar;
 
 import com.mnzn.lex.Token;
 import com.mnzn.lex.TokenTag;
-import com.mnzn.utils.visual.DrawableTreeNode;
-import lombok.Getter;
+import com.mnzn.utils.tree.DrawableTreeNode;
 
 import java.util.ArrayList;
 import java.util.List;
 
-// 抽象语法树节点
+// 抽象语法树节点 Todo 添加NodeTag(依据produceName)
 //@Getter
-public class ASTNode implements DrawableTreeNode {
+public class ASTNode extends DrawableTreeNode<ASTNode> {
     private final Token token; // 附带的词法单元
     private final List<ASTNode> children; // 子节点
 
     public ASTNode(Token token) {
+        this(token, new ArrayList<>());
+    }
+
+    public ASTNode(Token token, List<ASTNode> children) {
         this.token = token;
-        this.children = new ArrayList<>();
+        this.children = children;
     }
 
-//    public ASTNode(Token token, List<ASTNode> children) {
-//        this.token = token;
-//        this.children = children;
-//    }
-
-    public void addChild(ASTNode node) {
-        children.add(node);
-    }
-
-    public TokenTag tokenTag() {
+    public TokenTag tag() {
         return token.getTag();
     }
 
@@ -52,10 +46,14 @@ public class ASTNode implements DrawableTreeNode {
         return children.size();
     }
 
+    @Override
+    public List<ASTNode> getChildren() {
+        return children.stream().toList();
+    }
 
     @Override
-    public String getId() {
-        return String.valueOf(System.identityHashCode(this));
+    public void addChild(ASTNode child) {
+        children.add(child);
     }
 
     @Override
@@ -64,9 +62,7 @@ public class ASTNode implements DrawableTreeNode {
     }
 
     @Override
-    public ForwardEdge[] getEdges() {
-        return children.stream().
-                map(child -> new ForwardEdge(child, "")).
-                toArray(ForwardEdge[]::new);
+    public String toString() {
+        return token.toString();
     }
 }
