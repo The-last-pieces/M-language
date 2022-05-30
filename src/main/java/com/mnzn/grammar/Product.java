@@ -1,6 +1,8 @@
 package com.mnzn.grammar;
 
 import com.mnzn.lex.TokenTag;
+import com.mnzn.utils.tree.TreeNode;
+import com.mnzn.utils.tree.TreeUtils;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
@@ -8,7 +10,6 @@ import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.*;
-import java.util.function.Function;
 
 // 产生式, 构成方式为 String -> 用空格隔开的Symbol
 public class Product {
@@ -26,9 +27,19 @@ public class Product {
     }
 
     @AllArgsConstructor
-    private static class RuleTreeNode {
+    private static class RuleTreeNode implements TreeNode<RuleTreeNode> {
         int index; // 结点的值,代表第index个symbol
         List<RuleTreeNode> children; // 子symbol列表
+
+        @Override
+        public List<RuleTreeNode> getChildren() {
+            return children.stream().toList();
+        }
+
+        @Override
+        public void addChild(RuleTreeNode child) {
+            children.add(child);
+        }
     }
 
     @Getter
@@ -46,75 +57,17 @@ public class Product {
     // ASNode的构造规则root[child...]
     // 例: 0[1,2,3]
     private RuleTreeNode initRule(String rule) {
-        // 去除空字符
-        rule = rule.replaceAll("\\s", "");
-        // 维护一个待添加子节点 的 节点 的栈
-        Stack<RuleTreeNode> stack = new Stack<>();
-        // nop为无数字的状态, num为当前收集的数字, 只收集正数
-        int nop = -1, num = nop, n = rule.length();
         // 辅助索引去重
         final Set<Integer> set = new HashSet<>();
-        // 构造AST节点,并检查索引合法性
-        Function<Integer, RuleTreeNode> make = v -> {
+        return TreeUtils.buildTree(rule, str -> {
+            int v = Integer.parseInt(str);
             if (set.contains(v))
                 throw new IllegalArgumentException(String.format("索引重复: %d", v));
             if (v > getSymbolCount())
                 throw new IllegalArgumentException(String.format("索引 %d 超出范围: [0,%d)", v, getSymbolCount()));
             set.add(v);
             return new RuleTreeNode(v, new ArrayList<>());
-        };
-
-        for (int i = 0; i < n; i++) {
-            char c = rule.charAt(i);
-            if (c == '[') {
-                // 进入子节点的状态
-                if (num == nop) throw new IllegalArgumentException("'['前面缺少父节点");
-                // 构造父节点
-                RuleTreeNode node = make.apply(num);
-                // 如果现在有别的节点,则添加到其子节点中
-                if (!stack.isEmpty()) {
-                    stack.peek().children.add(node);
-                }
-                // 设置当前节点为栈顶节点
-                stack.push(node);
-                // 设为无状态
-                num = nop;
-            } else if (c == ']' || c == ',') {
-                if (stack.isEmpty()) {
-                    throw new IllegalArgumentException(String.format("'%c'不存在匹配的父节点", c));
-                } else if (num != nop) {
-                    // 如果有数字,则添加到栈顶节点的子节点中
-                    stack.peek().children.add(make.apply(num));
-                    if (c == ']') { // 栈顶结点的子节点收集完毕
-                        if (stack.size() == 1) {
-                            // 是最后一个结点,结束循环
-                            if (i + 1 == n) break;
-                            throw new IllegalArgumentException("只能存在一个根节点");
-                        }
-                        stack.pop();
-                    }
-                    num = nop; // 设为无状态
-                }
-            } else if ('0' <= c && c <= '9') {
-                // 收集数字
-                if (num == nop) num = 0; // 从无状态转为0
-                num = num * 10 + (c - '0'); // 加上当前数字
-            } else {
-                throw new RuntimeException(String.format("不支持的字符: %c", c));
-            }
-        }
-        // 栈空,即只有一个数字的rule
-        if (stack.isEmpty()) {
-            if (num != nop) {
-                return make.apply(num);
-            } else {
-                throw new RuntimeException("rule不能为空");
-            }
-        }
-        // 只能存在一个根节点
-        if (stack.size() != 1) throw new RuntimeException(String.format("解析异常,存在多个根节点: %d", stack.size()));
-        // 返回根节点
-        return stack.pop();
+        });
     }
 
     // 构造结构和rule相同的ASTNode
@@ -237,13 +190,26 @@ public class Product {
             return this;
         }
 
-        // 从文件读取文法 Todo
-        public ProductBuilder load(String file) throws IOException {
+        // 从文件读取文法
+        public ProductBuilder load(String file) {
             // 读取文件
             try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
-                String line;
-                while ((line = reader.readLine()) != null) {
+                String all = String.join("\n", reader.lines().toList());
+                all = all.replaceAll("(?m)(//[\\s\\S]*?(\n|$))", "\n");
+                // 按行分割并去除空行
+                List<String> lines = Arrays.stream(all.split("\n")).
+                        filter(s -> !s.trim().isEmpty()).toList();
+                for (int i = 0, n = lines.size(); i < n; i++) {
+                    String line = lines.get(i);
+                    // 使用add
+                    if (line.matches("\\s*\\S+\\s*->.*")) {
+                        add(lines.get(++i), line);
+                    } else { // 使用addOr
+                        addOr(line.replaceFirst("\\|>", "->"));
+                    }
                 }
+            } catch (IOException e) {
+                e.printStackTrace();
             }
             return this;
         }
