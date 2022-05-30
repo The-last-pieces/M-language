@@ -3,6 +3,7 @@ package com.mnzn.grammar;
 import com.mnzn.lex.LexParser;
 import com.mnzn.lex.Token;
 import com.mnzn.lex.TokenTag;
+import com.mnzn.utils.sys.SystemUtils;
 import com.mnzn.utils.visual.console.PrintUtils;
 import com.mnzn.utils.visual.paint.PaintUnits;
 
@@ -32,14 +33,6 @@ public class Grammar {
             };
         }
     }
-
-    // 成功匹配时node非null,cnt为消耗的token数量,error为null
-    // 失败时node为null,cnt为0,error为错误信息 Todo
-//    public record MatchResult(ASTNode node, int cnt, String error) {
-//        public boolean isSuccess() {
-//            return node != null;
-//        }
-//    }
 
     // 产生式的项
     // product的id
@@ -236,26 +229,7 @@ public class Grammar {
         }
     }
 
-// 获取最长匹配 Todo 使用DFA优化
-//    public MatchResult matchTokens(List<Token> tokens) {
-//        List<Token> copy = new ArrayList<>();
-//        Token eof = Token.of(TokenTag.Eof, "");
-//        MatchResult result = new MatchResult(null, -1, "no match");
-//        for (Token t : tokens) {
-//            copy.add(t);
-//            copy.add(eof);
-//            try {
-//                ASTNode ast = parse(copy);
-//                result = new MatchResult(ast, copy.size(), null);
-//            } catch (Exception ignored) {
-//                // Todo 丰富报错信息
-//            }
-//            copy.remove(copy.size() - 1);
-//        }
-//        return result;
-//    }
-
-    // 解析token流
+    // 解析token流 Todo 丰富报错信息
     public ASTNode parse(List<Token> tokens) {
         // 符号栈
         Stack<Integer> statueStack = new Stack<>();
@@ -267,7 +241,7 @@ public class Grammar {
         while (true) {
             int s = statueStack.peek(); // 栈顶状态
             // 当前输入符号
-            Token a = cur + 1 == tokens.size() ? Token.of(TokenTag.Eof, "") : tokens.get(cur);
+            Token a = cur == tokens.size() ? Token.of(TokenTag.Eof, "") : tokens.get(cur);
             Action action = actionTable[s][tokenId(a.getTag())];
             if (action.tag() == ActionTag.Shift) {
                 // 状态入栈
@@ -649,18 +623,12 @@ public class Grammar {
         grammar2.printTable();
         grammar2.printItemSets();
 
-        Scanner scanner = new Scanner(System.in);
-        while (scanner.hasNext()) {
-            try {
-                List<Token> tokens = new LexParser().parse(scanner.next());
-                tokens.add(Token.of(TokenTag.Eof, ""));
-                ASTNode node = grammar1.parse(tokens);
-                String savePath = "./.cache/out.png";
-                PaintUnits.paintTree(node, savePath);
-                System.out.printf("语法树图片已经保存在%s中\n", savePath);
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        }
+        SystemUtils.consoleLoopLine(str -> {
+            List<Token> tokens = new LexParser().parsePure(str);
+            ASTNode node = grammar1.parse(tokens);
+            String savePath = "./.cache/out.png";
+            PaintUnits.paintTree(node, savePath);
+            System.out.printf("语法树图片已经保存在%s中\n", savePath);
+        });
     }
 }
