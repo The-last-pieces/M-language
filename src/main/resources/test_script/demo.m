@@ -14,7 +14,6 @@ import sys.io.console.*
 declare ->  let id = expr
         |   let id : type = expr
 type -> int | float | bool | string | type[]
-expr -> Todo
 */
 let a : string = "hello";
 let b : int  = 10;
