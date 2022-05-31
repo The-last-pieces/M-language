@@ -6,6 +6,8 @@ import com.mnzn.lex.TokenTag;
 import com.mnzn.utils.sys.SystemUtils;
 import com.mnzn.utils.visual.console.PrintUtils;
 import com.mnzn.utils.visual.paint.PaintUnits;
+import io.vavr.Tuple;
+import io.vavr.Tuple2;
 
 import java.util.*;
 import java.util.function.Consumer;
@@ -82,7 +84,7 @@ public class Grammar {
     public Grammar(String S, List<Product> products) {
         // 创建增广文法,令S'作为新的开始符号,S'->S唯一的接受式
         Product G = new Product.ProductBuilder()
-                .addOr(String.format("%s' -> %s", S, S))
+                .addOr(String.format("%s' |> %s", S, S))
                 .buildOne();
         // 生成产生式列表,不共用列表的引用
         this.products = new ArrayList<>(1 + products.size());
@@ -136,10 +138,10 @@ public class Grammar {
      */
     private void initAnalysis() {
         /// 4. 填充默认值
-        // action填充e()
+        // action填充null
         for (int i = 0; i < stateCount; i++) {
             for (int j = 0; j < terminalCount; j++) {
-                actionTable[i][j] = e();
+                actionTable[i][j] = null;
             }
         }
         // goto填充-1
@@ -175,7 +177,7 @@ public class Grammar {
                     if (a.isTerminal()) {
                         ItemSet go = calculateGoto(Ii, a);
                         int j = findIj.apply(go);
-                        if (j != -1) actionTable[i][tokenId(a.terminal())] = s(j);
+                        if (j != -1) setAction(i, tokenId(a.terminal()), s(j));
                     }
                 }
                 // 格式为[A->α · , a]
@@ -183,11 +185,11 @@ public class Grammar {
                     TokenTag a = item.lookahead;
                     // 2.2. A != S' , 规约到A -> α
                     if (item.pid != 0) {
-                        actionTable[i][tokenId(a)] = r(item.pid);
+                        setAction(i, tokenId(a), r(item.pid));
                     }
                     // 2.3. A == S' , 且a == $ , 成功匹配
                     else if (a == TokenTag.Eof) {
-                        actionTable[i][tokenId(TokenTag.Eof)] = a();
+                        setAction(i, tokenId(TokenTag.Eof), a());
                     }
                 }
             }
@@ -195,10 +197,27 @@ public class Grammar {
             for (Map.Entry<String, Integer> entry : productNameToId.entrySet()) {
                 ItemSet go = calculateGoto(Ii, new Product.Symbol(entry.getKey(), null));
                 int j = findIj.apply(go);
-                if (j != -1) gotoTable[i][entry.getValue()] = j;
+                if (j != -1) setGoto(i, entry.getValue(), j);
+            }
+        }
+        // action null to error
+        for (int i = 0; i < stateCount; i++) {
+            for (int j = 0; j < terminalCount; j++) {
+                if (actionTable[i][j] == null) {
+                    actionTable[i][j] = e();
+                }
             }
         }
     }
+
+    private void setAction(int i, int j, Action action) {
+        actionTable[i][j] = action;
+    }
+
+    private void setGoto(int i, int j, int k) {
+        gotoTable[i][j] = k;
+    }
+
 
     // 初始化映射表:productNameToId,productToId,tokenToId,productGroup,allSymbols
     private void initMap() {
@@ -231,6 +250,7 @@ public class Grammar {
 
     // 解析token流 Todo 丰富报错信息
     public ASTNode parse(List<Token> tokens) {
+        tokens = tokens.stream().filter(c -> c.getTag().needParse()).toList();
         // 符号栈
         Stack<Integer> statueStack = new Stack<>();
         statueStack.push(0); // 栈底标记
@@ -339,7 +359,7 @@ public class Grammar {
     private int tokenId(TokenTag terminal) {
         Integer id = tokenToId.get(terminal);
         if (id == null) {
-            throw new RuntimeException("token not found");
+            throw new RuntimeException(String.format("未知的终结符: %s", terminal));
         } else {
             return id;
         }
@@ -349,7 +369,7 @@ public class Grammar {
     private int productId(Product product) {
         Integer id = productToId.get(product);
         if (id == null) {
-            throw new RuntimeException("product not found");
+            throw new RuntimeException(String.format("未知的产生式: %s", product));
         } else {
             return id;
         }
@@ -367,6 +387,12 @@ public class Grammar {
     /// 分析表构造过程中相关的函数
     // first函数,求文法符号串r的first集
     Set<TokenTag> calculateFirst(List<Product.Symbol> symbols) {
+        class ResultCache {
+            public static final Map<List<Product.Symbol>, Set<TokenTag>> cache = new HashMap<>();
+        }
+        Set<TokenTag> cache = ResultCache.cache.get(symbols);
+        if (cache != null) return cache;
+
         // 结果集
         final Set<TokenTag> result = new HashSet<>();
         // 辅助nullable去重
@@ -447,11 +473,18 @@ public class Grammar {
         // 调用辅助函数
         first.accept(symbols);
 
+        ResultCache.cache.put(symbols, result);
         return result;
     }
 
     // closure函数,求项集的闭包,返回项集
     ItemSet calculateClosure(ItemSet items) {
+        class ResultCache {
+            public static final Map<ItemSet, ItemSet> cache = new HashMap<>();
+        }
+        ItemSet cache = ResultCache.cache.get(items);
+        if (cache != null) return cache;
+
         // 结果集
         ItemSet result = new ItemSet(items);
         // 使用bfs求闭包,等待迭代的项集
@@ -491,11 +524,19 @@ public class Grammar {
                 }
             }
         }
+
+        ResultCache.cache.put(items, result);
         return result;
     }
 
     // goto函数,求项集=>symbol的项集闭包
     ItemSet calculateGoto(ItemSet items, Product.Symbol symbol) {
+        class ResultCache {
+            public static final Map<Tuple2<ItemSet, Product.Symbol>, ItemSet> cache = new HashMap<>();
+        }
+        ItemSet cache = ResultCache.cache.get(Tuple.of(items, symbol));
+        if (cache != null) return cache;
+
         // 结果集
         ItemSet result = new ItemSet();
         // 遍历每个项目 : [A -> α · X β, a]
@@ -511,7 +552,10 @@ public class Grammar {
             // 将dot的位置加一,即[A -> α X · β, a]
             result.add(buildItem(item.pid, item.dot + 1, item.lookahead));
         }
-        return calculateClosure(result);
+
+        result = calculateClosure(result);
+        ResultCache.cache.put(Tuple.of(items, symbol), result);
+        return result;
     }
 
     // items函数,求LR(1)项集族,I0必须包含[S'->· S, $]
@@ -594,17 +638,17 @@ public class Grammar {
                 .alias("(", TokenTag.L1)
                 .alias(")", TokenTag.R1)
                 // 任意个顶级表达式相乘的表达式相加
-                .add("1[0,2]", "E -> E + T")
-                .add("0", "E -> T")
+                .addAnd("E -> E + T")
+                .addAnd("E -> T")
                 // 任意个顶级表达式相乘
-                .add("1[0,2]", "T -> T * F")
-                .add("0", "T -> F")
+                .addAnd("T -> T * F")
+                .addAnd("T -> F")
                 // 用括号提升成顶级表达式
-                .add("1", "F -> ( E )")
+                .addAnd("F -> ( E )")
                 // 单个变量/数字就是一个顶级运算单元
-                .addOr("F -> id int float")
+                .addOr("F |> id int float")
                 // 赋值操作
-                .add("1[0,2]", "F -> id = E")
+                .addAnd("F -> id = E")
                 .build()).toList());
 
         // https://haihong.blog.csdn.net/article/details/105597613
@@ -612,11 +656,11 @@ public class Grammar {
                 .alias("id", TokenTag.Identifier)
                 .alias("*", TokenTag.Mut)
                 .alias("=", TokenTag.Assign)
-                .add("1[0,2]", "S -> L = R")
-                .add("0", "S -> R")
-                .add("0[1]", "L -> * R")
-                .add("0", "L -> id")
-                .add("0", "R -> L")
+                .addAnd("S -> L = R")
+                .addAnd("S -> R")
+                .addAnd("L -> * R")
+                .addAnd("L -> id")
+                .addAnd("R -> L")
                 .build()).toList());
 
         // grammar1.printTable();
@@ -624,7 +668,7 @@ public class Grammar {
         grammar2.printItemSets();
 
         SystemUtils.consoleLoopLine(str -> {
-            List<Token> tokens = new LexParser().parsePure(str);
+            List<Token> tokens = new LexParser().parse(str);
             ASTNode node = grammar1.parse(tokens);
             String savePath = "./.cache/out.png";
             PaintUnits.paintTree(node, savePath);
