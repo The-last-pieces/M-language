@@ -91,7 +91,7 @@ if/else/while/for/condition
 
 # 项目架构
 
-使用两遍扫描, 第一遍扫描所有模块并维护所有符号表, 第二遍构建具体语法树.
+~~使用两遍扫描, 第一遍扫描所有模块并维护所有符号表, 第二遍构建具体语法树.~~
 
 ## 词法分析
 
@@ -99,7 +99,7 @@ if/else/while/for/condition
 
 ## 语法分析
 
-将token转为语法树 , 并维护符号表
+将token转为语法树
 
 ## 语义分析
 
@@ -109,20 +109,12 @@ if/else/while/for/condition
 
 主要为进行编译期求值 , 减小语法树大小
 
+## 语法树执行
+
+维护符号表&函数表,依次执行所有节点
+
 # 文法格式
 
-## 语句
+见/resource/all_grammars
 
-```
-// 单个语句
-stmt -> id = expr;
-     |  expr;
-     |  if(expr) stmt
-     |  if(expr) stmt else stmt
-     |  while(expr) stmt
-     |  do stmt while(expr);
-     |  {stmts}
-// 一组语句
-stmts -> stmts stmt
-       | e
-```
+注 : 目前只编写了C语言的文法 , 即c_gram.c
