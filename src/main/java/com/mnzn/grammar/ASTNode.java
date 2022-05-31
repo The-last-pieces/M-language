@@ -1,6 +1,7 @@
 package com.mnzn.grammar;
 
 import com.mnzn.lex.Token;
+import com.mnzn.lex.TokenTag;
 import com.mnzn.utils.tree.DrawableTreeNode;
 
 import java.util.ArrayList;
@@ -25,12 +26,31 @@ public class ASTNode extends DrawableTreeNode<ASTNode> {
         this.children = new ArrayList<>();
     }
 
+    // 是否为叶节点(即终结符节点)
+    public boolean isLeaf() {
+        return terminal != null;
+    }
+
     // 获取子结点
     public ASTNode c(int i) {
         return children.get(i);
     }
 
+    // 获取tag
+    public TokenTag tag() {
+        assert terminal != null;
+        return terminal.getTag();
+    }
+
+    public TokenTag tag(int i) {
+        return c(i).tag();
+    }
+
     // 获取token
+    public Token t() {
+        return t(Token.class);
+    }
+
     public <T> T t(Class<T> ct) {
         return ct.cast(terminal);
     }
