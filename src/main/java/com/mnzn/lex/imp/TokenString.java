@@ -17,7 +17,7 @@ public class TokenString extends Token {
 
     @Override
     public String toString() {
-        return String.format("<%s, %s>", name(), value);
+        return String.format("<%s, \"%s\">", name(), value);
     }
 
     private static String buildFrom(String value) {
