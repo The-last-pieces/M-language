@@ -2,11 +2,14 @@
 root_unit |> stmt_seq expr $
 
 /// 语句
-stmt |> expr_stmt
-        compound_stmt
-        while_stmt
+stmt |> not_if_stmt
         if_matched_stmt
         if_open_stmt $
+
+// 除了两个特殊if语句之外的其他语句
+not_if_stmt |> expr_stmt
+               compound_stmt
+               while_stmt $
 
 // 语句列表
 stmt_seq -> stmt_seq stmt $
@@ -24,9 +27,7 @@ while_stmt -> while parent_expr stmt $
 
 // 条件语句(匹配了else)
 if_matched_stmt -> if parent_expr if_matched_stmt else if_matched_stmt $
-if_matched_stmt |>  expr_stmt
-                    compound_stmt
-                    while_stmt $
+if_matched_stmt |> not_if_stmt $
 
 // 条件语句(未匹配else)
 if_open_stmt -> if parent_expr stmt $
