@@ -19,12 +19,16 @@ import static guru.nidi.graphviz.model.Factory.*;
 public class PaintUnits {
     private static <T extends DrawableTreeNode<T>> Node makeNode(T n) {
         // 附带要显示的所有属性
-        Attributes<ForNode> rec = Records.of(n.getLabels().stream().map(StringEscapeUtils::escapeHtml3).toArray(String[]::new));
+        Attributes<ForNode> rec = Records.of(n.getLabels().stream().
+                map(StringEscapeUtils::escapeHtml3).
+                map(c -> c.replaceAll("[{}|\"]", "\\\\$0")).
+                toArray(String[]::new));
         return node(n.getId()).with(rec);
+
     }
 
     // 打印树状图
-    public static <T extends DrawableTreeNode<T>> void paintTree(T root, String outputPath) {
+    public static <T extends DrawableTreeNode<T>> void paintTree(T root, String outputPath, int width) {
         Graph g = graph().directed().
                 graphAttr().with(Rank.dir(Rank.RankDir.TOP_TO_BOTTOM)).
                 with(makeNode(root));
@@ -46,9 +50,13 @@ public class PaintUnits {
             }
         }
         try {
-            Graphviz.fromGraph(g).width(1000).render(Format.PNG).toFile(new File(outputPath));
+            Graphviz.fromGraph(g).width(width).render(Format.PNG).toFile(new File(outputPath));
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    public static <T extends DrawableTreeNode<T>> void paintTree(T root, String outputPath) {
+        paintTree(root, outputPath, 2000);
     }
 }
