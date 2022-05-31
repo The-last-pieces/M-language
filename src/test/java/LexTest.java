@@ -4,7 +4,6 @@ import com.mnzn.utils.sys.SystemUtils;
 import com.mnzn.utils.visual.console.PrintUtils;
 
 import java.util.List;
-import java.util.Scanner;
 
 public class LexTest {
     public static void main(String[] args) {
@@ -13,7 +12,7 @@ public class LexTest {
 
     private static void testFile() {
         LexParser lexParser = new LexParser();
-        String str = "../resources/test_script/test.m";
+        String str = "test_script/c_test.c";
         List<Token> tokens = lexParser.parseFile(str);
         PrintUtils.printTokens(tokens);
         PrintUtils.printColorTokens(tokens);
