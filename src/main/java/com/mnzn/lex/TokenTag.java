@@ -23,6 +23,7 @@ public enum TokenTag {
     Inner(":"),
     Comma(","),
     Dot("."),
+    Quest("?"),
     // 关系运算符
     Eq("=="),
     Le("<"),
@@ -37,7 +38,21 @@ public enum TokenTag {
     Div("/"),
     Pow("**"),
     Mod("%"),
+    // 赋值运算符 = += -= *= /= %= **= <<= >>= &= ^= |=
     Assign("="),
+    AssignAdd("+="),
+    AssignSub("-="),
+    AssignMut("*="),
+    AssignDiv("/="),
+    AssignMod("%="),
+    AssignPow("**="),
+    AssignLeft("<<="),
+    AssignRight(">>="),
+    AssignBitAnd("&="),
+    AssignBitXor("^="),
+    AssignBitOr("|="),
+    SelfAdd("++"),
+    SelfSub("--"),
     // 逻辑运算符
     And("&&"),
     Or("||"),
@@ -47,6 +62,8 @@ public enum TokenTag {
     OrBit("|"),
     NotBit("~"),
     XorBit("^"),
+    LeftBit("<<"),
+    RightBit(">>"),
     // 类型关键字
     VoidT("void"),
     BoolT("bool"),
@@ -57,6 +74,7 @@ public enum TokenTag {
     ClassT("class"),
     // 控制流关键字
     For("for"), // for
+    While("while"), // for
     Break("break"),
     Continue("continue"),
     If("if"),
@@ -129,7 +147,7 @@ public enum TokenTag {
         return this.pure == null && this.pattern == null;
     }
 
-    boolean needParse() {
+    public boolean needParse() {
         return !isNone() && this != Nop;
     }
 
