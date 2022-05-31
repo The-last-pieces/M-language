@@ -42,11 +42,6 @@ public class LexParser {
         return tokens;
     }
 
-    // 只获取参与解析的Token
-    public List<Token> parsePure(String str) {
-        return parse(str).stream().filter(c -> c.getTag().needParse()).toList();
-    }
-
     public List<Token> parseFile(String filePath) {
         File file = new File(filePath);
         if (!file.exists()) {
