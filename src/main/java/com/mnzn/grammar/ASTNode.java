@@ -1,29 +1,28 @@
 package com.mnzn.grammar;
 
 import com.mnzn.lex.Token;
-import com.mnzn.lex.TokenTag;
 import com.mnzn.utils.tree.DrawableTreeNode;
 
 import java.util.ArrayList;
 import java.util.List;
 
-// 抽象语法树节点 Todo 添加NodeTag(依据produceName)
+// 抽象语法树节点
 //@Getter
 public class ASTNode extends DrawableTreeNode<ASTNode> {
-    private final Token token; // 附带的词法单元
+    private final ProduceTag produce;   // 非终结符结点
+    private final Token terminal;       // 终结符结点
     private final List<ASTNode> children; // 子节点
 
-    public ASTNode(Token token) {
-        this(token, new ArrayList<>());
+    public ASTNode(Token terminal) {
+        this.terminal = terminal;
+        this.produce = null;
+        this.children = new ArrayList<>();
     }
 
-    public ASTNode(Token token, List<ASTNode> children) {
-        this.token = token;
-        this.children = children;
-    }
-
-    public TokenTag tag() {
-        return token.getTag();
+    public ASTNode(ProduceTag produce) {
+        this.produce = produce;
+        this.terminal = null;
+        this.children = new ArrayList<>();
     }
 
     // 获取子结点
@@ -33,12 +32,22 @@ public class ASTNode extends DrawableTreeNode<ASTNode> {
 
     // 获取token
     public <T> T t(Class<T> ct) {
-        return ct.cast(token);
+        return ct.cast(terminal);
     }
 
     // 获取子节点的token
     public <T> T t(int i, Class<T> ct) {
-        return ct.cast(c(i).token);
+        return ct.cast(c(i).terminal);
+    }
+
+    // 获取产生式
+    public ProduceTag p() {
+        return produce;
+    }
+
+    // 获取子节点的产生式
+    public ProduceTag p(int i) {
+        return c(i).produce;
     }
 
     // size
@@ -58,11 +67,17 @@ public class ASTNode extends DrawableTreeNode<ASTNode> {
 
     @Override
     public List<String> getLabels() {
-        return List.of(token.toString());
+        return List.of(this.toString());
     }
 
     @Override
     public String toString() {
-        return token.toString();
+        if (terminal != null) {
+            return terminal.toString();
+        } else if (produce != null) {
+            return produce.toString();
+        } else {
+            throw new RuntimeException("ASTNode is null");
+        }
     }
 }
