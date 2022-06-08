@@ -21,4 +21,26 @@ public class SystemUtils {
     public static void consoleLoopLine(Consumer<String> consumer) {
         consoleLoop(consumer, Scanner::nextLine);
     }
+
+    // 输入长字符串直到指定的终结符
+    public static void consoleLoopUntil(Consumer<String> consumer, String terminal) {
+        Scanner scanner = new Scanner(System.in);
+        StringBuilder sb = new StringBuilder();
+
+        while (true) {
+            try {
+                String line = scanner.nextLine();
+                sb.append(line).append("\n");
+                // 尝试从尾部开始搜索
+                int idx = sb.lastIndexOf(terminal);
+                if (idx != -1) {
+                    consumer.accept(sb.substring(0, idx));
+                    sb.delete(0, idx + terminal.length());
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+                break;
+            }
+        }
+    }
 }
