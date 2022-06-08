@@ -13,6 +13,7 @@ import com.mnzn.utils.visual.paint.PaintUnits;
 import java.math.BigDecimal;
 import java.math.MathContext;
 import java.util.*;
+import java.util.function.Consumer;
 
 // 一个解释器上下文,对String流进行解释
 public class InterpreterContext {
@@ -113,7 +114,7 @@ public class InterpreterContext {
                 case "sub_expr" -> {
                     TokenId id = root.t(0, TokenId.class);
                     Object value = getVariable(id.getId());
-                    int index = num(evalSimple(root.c(1))).intValue();
+                    int index = num(evalSimple(root.c(2))).intValue();
                     if (value instanceof List) {
                         yield ((List<?>) value).get(index);
                     } else if (value instanceof String) {
@@ -234,6 +235,12 @@ public class InterpreterContext {
     }
 
     public static void main(String[] args) {
+        // 单行,多行,文件名
+        String mode = "multi_line";
+        runTest(mode);
+    }
+
+    private static void runTest(String mode) {
         String path = Objects.requireNonNull(InterpreterContext.class.getResource("/all_grammars/c_gram.c")).getFile();
         // 自动导入文法文件
         Grammar grammar = new Grammar("root_unit", Arrays.stream(new Product.ProductBuilder()
@@ -242,13 +249,39 @@ public class InterpreterContext {
         System.out.println("build success");
         // 解释器上下文
         InterpreterContext context = new InterpreterContext();
-        SystemUtils.consoleLoopLine(str -> {
-            List<Token> tokens = new LexParser().parseFile(str);
-            ASTNode node = grammar.parse(tokens);
+
+        Consumer<ASTNode> dealNode = node -> {
             //PrintUtils.printTree(node, "  ");
-            //PaintUnits.paintTree(node, "./.cache/ast_v.png", 1000);
-            System.out.println(context.eval(node));
-            //System.out.println("finish");
-        });
+            var ret = context.eval(node);
+            if (ret != null) {
+                System.out.printf("eval : %s\n", ret);
+            }
+            //PaintUnits.paintTree(node, "./.cache/ast_v.png", 4000);
+            System.out.println("<finish>");
+        };
+
+        switch (mode) {
+            case "single_line" -> {
+                SystemUtils.consoleLoopLine(str -> {
+                    List<Token> tokens = new LexParser().parse(str);
+                    ASTNode node = grammar.parse(tokens);
+                    dealNode.accept(node);
+                });
+            }
+            case "multi_line" -> {
+                SystemUtils.consoleLoopUntil(str -> {
+                    List<Token> tokens = new LexParser().parse(str);
+                    ASTNode node = grammar.parse(tokens);
+                    dealNode.accept(node);
+                }, "\n\n");
+            }
+            case "file" -> {
+                SystemUtils.consoleLoopLine(str -> {
+                    List<Token> tokens = new LexParser().parseFile(str);
+                    ASTNode node = grammar.parse(tokens);
+                    dealNode.accept(node);
+                });
+            }
+        }
     }
 }
